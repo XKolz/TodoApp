@@ -19,7 +19,7 @@ import { todoApi } from "../api/todoApi";
 import { PriorityBadge, priorityColors } from "../components/PriorityBadge";
 import { TodoListScreenProps, Todo, TodoInput, Priority } from "../types/types";
 // For debugging, clear storage on every reload
-// import { clearStorage } from "../utils/storage";
+import { clearStorage } from "../utils/storage";
 
 const { width } = Dimensions.get("window");
 
@@ -46,10 +46,22 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
     queryFn: todoApi.fetchTodos,
   });
 
+  // const deleteTodoMutation = useMutation({
+  //   mutationFn: (todoId: string) => todoApi.deleteTodo(todoId),
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["todos"] });
+  //   },
+  // });
   const deleteTodoMutation = useMutation({
     mutationFn: (todoId: string) => todoApi.deleteTodo(todoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
+    onError: (error) => {
+      console.error("Failed to delete todo:", error);
+      Alert.alert("Error", "Failed to delete todo. Please try again.", [
+        { text: "OK" },
+      ]);
     },
   });
 
