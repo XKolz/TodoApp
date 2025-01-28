@@ -38,7 +38,7 @@ export interface ApiTodo extends BaseTodo {
 
 // Domain Todo type
 export interface Todo extends BaseTodo {
-  createdAt: string | null;
+  createdAt: string;
   dueDate: string | null;
 }
 
@@ -47,6 +47,7 @@ export interface TodoInput {
   title: string;
   completed: boolean;
   priority: Priority;
+  dueDate?: string | null;
 }
 
 // API types

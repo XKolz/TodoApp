@@ -1,30 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Todo, BaseTodo, Priority, TodoInput } from "../types/types";
+import { BASE_URL } from "@env";
 
-// Define all types
-export enum Priority {
-  LOW = "low",
-  MEDIUM = "medium",
-  HIGH = "high",
-}
-
-export interface BaseTodo {
-  title: string;
-  completed: boolean;
-}
-
-export interface TodoInput extends BaseTodo {
-  priority?: Priority;
-  dueDate?: string | null;
-}
-
-export interface Todo extends BaseTodo {
-  id: string;
-  priority: Priority;
-  dueDate: string | null;
-  createdAt: string;
-}
-
-const BASE_URL = "https://jsonplaceholder.typicode.com";
 const STORAGE_KEY = "@todos";
 
 export const todoApi = {
