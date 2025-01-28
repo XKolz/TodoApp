@@ -18,6 +18,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { todoApi } from "../api/todoApi";
 import { PriorityBadge, priorityColors } from "../components/PriorityBadge";
 import { TodoListScreenProps, Todo, TodoInput, Priority } from "../types/types";
+// For debugging, clear storage on every reload
+// import { clearStorage } from "../utils/storage";
 
 const { width } = Dimensions.get("window");
 
@@ -35,6 +37,8 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
       queryClient.invalidateQueries({ queryKey: ["todos"] });
     };
     init();
+    // For debugging, clear storage on every reload
+    // clearStorage();
   }, []);
 
   const { data: todos, isLoading } = useQuery<Todo[]>({

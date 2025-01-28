@@ -13,7 +13,8 @@ export const todoApi = {
         const data: BaseTodo[] = await response.json();
         const initialTodos: Todo[] = data.slice(0, 10).map((todo) => ({
           ...todo,
-          id: Date.now().toString(), // Add ID since we're only getting base todos
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          // id: Date.now().toString(), // Add ID since we're only getting base todos
           priority: Priority.MEDIUM,
           dueDate: null,
           createdAt: new Date().toISOString(),
