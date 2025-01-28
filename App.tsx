@@ -6,8 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TodoListScreen from "./screens/TodoListScreen";
 import TodoDetailScreen from "./screens/TodoDetailScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { RootStackParamList } from "./types/types";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 const queryClient = new QueryClient();
 
 export default function App() {

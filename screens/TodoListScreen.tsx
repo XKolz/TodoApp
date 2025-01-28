@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   ListRenderItem,
+  Dimensions,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Swipeable } from "react-native-gesture-handler";
@@ -17,8 +18,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { todoApi } from "../api/todoApi";
 import { PriorityBadge, priorityColors } from "../components/PriorityBadge";
 import { TodoListScreenProps, Todo, TodoInput, Priority } from "../types/types";
-// For debugging, clear storage on each load
-import { clearStorage } from "../utils/storage";
+
+const { width } = Dimensions.get("window");
 
 export default function TodoListScreen({ navigation }: TodoListScreenProps) {
   const [newTodo, setNewTodo] = useState("");
@@ -34,8 +35,6 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
       queryClient.invalidateQueries({ queryKey: ["todos"] });
     };
     init();
-    // For debugging, clear storage on each load
-    // clearStorage();
   }, []);
 
   const { data: todos, isLoading } = useQuery<Todo[]>({
@@ -107,7 +106,15 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
       renderRightActions={() => renderRightActions(item.id)}
       rightThreshold={40}
     >
-      <View style={styles.todoItem}>
+      <View
+        style={[
+          styles.todoItem,
+          {
+            borderLeftColor: priorityColors[item.priority],
+            borderLeftWidth: 4,
+          },
+        ]}
+      >
         <View style={styles.todoInfo}>
           <Text
             style={[styles.todoTitle, item.completed && styles.completedTodo]}
@@ -116,19 +123,25 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
           </Text>
           <View style={styles.todoMeta}>
             <PriorityBadge priority={item.priority} />
-            <Text style={styles.todoStatus}>
+            <Text
+              style={[
+                styles.todoStatus,
+                { color: item.completed ? "#4CAF50" : "#FF9800" },
+              ]}
+            >
               {item.completed ? "Completed" : "In Progress"}
             </Text>
           </View>
         </View>
         <View style={styles.todoActions}>
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, styles.viewButton]}
             onPress={() =>
               navigation.navigate("TodoDetail", { todoId: item.id })
             }
           >
-            <Text style={styles.viewDetailsBtn}>View Details</Text>
+            <Ionicons name="eye-outline" size={18} color="#007AFF" />
+            <Text style={styles.viewDetailsBtn}>View</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -137,8 +150,17 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
             ]}
             onPress={() => toggleTodoMutation.mutate(item.id)}
           >
+            <Ionicons
+              name={
+                item.completed
+                  ? "close-circle-outline"
+                  : "checkmark-circle-outline"
+              }
+              size={18}
+              color="white"
+            />
             <Text style={styles.buttonText}>
-              {item.completed ? "Mark Incomplete" : "Mark Complete"}
+              {item.completed ? "Undo" : "Complete"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -147,7 +169,11 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
   );
 
   if (isLoading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
   }
 
   return (
@@ -163,12 +189,13 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
         <FlatList
           data={todos}
           renderItem={renderItem}
-          keyExtractor={(item, index) => `todo-${item.id}-${index}`}
+          keyExtractor={(item) => item.id}
           style={styles.list}
+          contentContainerStyle={styles.listContent}
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Ionicons name="clipboard-outline" size={64} color="#666" />
+          <Ionicons name="clipboard-outline" size={80} color="#E0E0E0" />
           <Text style={styles.emptyTitle}>No Todos Yet</Text>
           <Text style={styles.emptyText}>
             Tap the + button below to create your first todo
@@ -179,19 +206,28 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
       <Modal visible={showAddModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Todo</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create New Todo</Text>
+              <TouchableOpacity
+                onPress={() => setShowAddModal(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
 
             <TextInput
               style={styles.modalInput}
               value={newTodo}
               onChangeText={setNewTodo}
-              placeholder="Enter todo title"
+              placeholder="What needs to be done?"
+              placeholderTextColor="#999"
               autoFocus={true}
               multiline={true}
               numberOfLines={3}
             />
 
-            <Text style={styles.label}>Priority:</Text>
+            <Text style={styles.label}>Priority Level</Text>
             <View style={styles.priorityButtons}>
               {Object.values(Priority).map((priority) => (
                 <TouchableOpacity
@@ -199,12 +235,18 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
                   style={[
                     styles.priorityButton,
                     selectedPriority === priority && styles.selectedPriority,
-                    { backgroundColor: priorityColors[priority] },
+                    { backgroundColor: priorityColors[priority] + "20" },
                   ]}
                   onPress={() => setSelectedPriority(priority)}
                 >
-                  <Text style={styles.priorityButtonText}>
-                    {priority.toUpperCase()}
+                  <Text
+                    style={[
+                      styles.priorityButtonText,
+                      { color: priorityColors[priority] },
+                    ]}
+                  >
+                    {priority.charAt(0).toUpperCase() +
+                      priority.slice(1).toLowerCase()}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -212,21 +254,25 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setShowAddModal(false);
                   setNewTodo("");
                   setSelectedPriority(Priority.MEDIUM);
                 }}
               >
-                <Text style={styles.buttonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.button, styles.addButton]}
+                style={[
+                  styles.modalButton,
+                  styles.addButton,
+                  !newTodo.trim() && styles.disabledButton,
+                ]}
                 onPress={handleAddTodo}
                 disabled={!newTodo.trim()}
               >
-                <Text style={styles.buttonText}>Add Todo</Text>
+                <Text style={styles.addButtonText}>Create Todo</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -239,17 +285,26 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F5F7FA",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5F7FA",
   },
   list: {
     flex: 1,
   },
-  todoItem: {
-    backgroundColor: "#fff",
+  listContent: {
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
+    paddingBottom: 80,
+  },
+  todoItem: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -257,124 +312,161 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   todoInfo: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
   todoTitle: {
     fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 4,
+    fontWeight: "600",
+    color: "#2C3E50",
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  todoMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   todoStatus: {
     fontSize: 14,
-    color: "#666",
+    fontWeight: "500",
   },
   todoActions: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
+    gap: 12,
   },
   button: {
     padding: 8,
-    borderRadius: 4,
-    minWidth: 100,
-    alignItems: "center",
-  },
-  addButton: {
-    backgroundColor: "#007AFF",
-    padding: 8,
     borderRadius: 8,
-    justifyContent: "center",
-    minWidth: 80,
+    flexDirection: "row",
     alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+  },
+  viewButton: {
+    backgroundColor: "#F0F8FF",
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "500",
+    fontWeight: "600",
+    fontSize: 14,
   },
   viewDetailsBtn: {
-    color: "black",
-    fontWeight: "500",
+    color: "#007AFF",
+    fontWeight: "600",
+    fontSize: 14,
   },
   completedTodo: {
     textDecorationLine: "line-through",
-    color: "#666",
+    color: "#B2B2B2",
   },
   pendingButton: {
     backgroundColor: "#007AFF",
   },
   completedButton: {
-    backgroundColor: "#32CD32",
+    backgroundColor: "#4CAF50",
   },
   deleteAction: {
-    backgroundColor: "#ff0000",
+    backgroundColor: "#FF3B30",
     justifyContent: "center",
     alignItems: "center",
     width: 80,
-    height: "100%",
+    borderRadius: 12,
+    marginLeft: 8,
   },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: 20,
+    padding: 16,
   },
   modalContent: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 16,
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#2C3E50",
+  },
+  closeButton: {
+    padding: 4,
   },
   modalInput: {
-    borderColor: "#ddd",
+    borderColor: "#E5E7EB",
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#F9FAFB",
     textAlignVertical: "top",
-    minHeight: 80,
+    minHeight: 100,
+    marginBottom: 20,
+    color: "#2C3E50",
   },
   label: {
     fontSize: 16,
-    fontWeight: "500",
-    marginTop: 16,
-    marginBottom: 8,
+    fontWeight: "600",
+    color: "#2C3E50",
+    marginBottom: 12,
   },
   priorityButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 24,
   },
   priorityButton: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
-    minWidth: 90,
+    minWidth: width * 0.25,
     alignItems: "center",
   },
   selectedPriority: {
-    transform: [{ scale: 1.1 }],
+    transform: [{ scale: 1.05 }],
   },
   priorityButtonText: {
-    color: "#fff",
     fontWeight: "600",
-  },
-  todoMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    gap: 8,
+    fontSize: 14,
   },
   modalActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 12,
   },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: "center",
+  },
   cancelButton: {
-    backgroundColor: "#666",
+    backgroundColor: "#F3F4F6",
+  },
+  cancelButtonText: {
+    color: "#4B5563",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  addButton: {
+    backgroundColor: "#007AFF",
+  },
+  addButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  disabledButton: {
+    backgroundColor: "#A0A0A0",
+    opacity: 0.5,
   },
   emptyContainer: {
     flex: 1,
@@ -383,15 +475,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 16,
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#2C3E50",
+    marginTop: 24,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: "#666",
+    color: "#64748B",
     textAlign: "center",
     lineHeight: 24,
   },

@@ -7,12 +7,20 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { todoApi } from "../api/todoApi";
-import { TodoDetailScreenProps, Todo, UpdateTodoPayload } from "../types/types";
+import { TodoDetailScreenProps, UpdateTodoPayload } from "../types/types";
+import { priorityColors } from "../components/PriorityBadge";
 
-export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
+const { width } = Dimensions.get("window");
+
+export default function TodoDetailScreen({
+  route,
+  navigation,
+}: TodoDetailScreenProps) {
   const { todoId } = route.params;
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
@@ -28,6 +36,7 @@ export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
       todoApi.updateTodo(updatedTodo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todo", todoId] });
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
       setIsEditing(false);
     },
   });
@@ -35,15 +44,25 @@ export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   if (!todo) {
     return (
-      <View style={styles.container}>
-        <Text>Todo not found</Text>
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={64} color="#FF3B30" />
+        <Text style={styles.errorTitle}>Todo Not Found</Text>
+        <Text style={styles.errorText}>
+          This todo might have been deleted or doesn't exist.
+        </Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -54,10 +73,12 @@ export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
   };
 
   const handleSavePress = () => {
-    updateTodoMutation.mutate({
-      id: todo.id,
-      title: editedTitle,
-    });
+    if (editedTitle.trim()) {
+      updateTodoMutation.mutate({
+        id: todo.id,
+        title: editedTitle,
+      });
+    }
   };
 
   const handleCancelPress = () => {
@@ -71,48 +92,81 @@ export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.card}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <View
+        style={[
+          styles.card,
+          !isEditing && {
+            borderLeftColor: priorityColors[todo.priority],
+            borderLeftWidth: 4,
+          },
+        ]}
+      >
         {isEditing ? (
           <View style={styles.editContainer}>
-            <Text style={styles.label}>Edit Todo</Text>
+            <View style={styles.editHeader}>
+              <Text style={styles.editTitle}>Edit Todo</Text>
+              <TouchableOpacity onPress={handleCancelPress}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
             <TextInput
               style={styles.editInput}
               value={editedTitle}
               onChangeText={setEditedTitle}
               multiline
               placeholder="Enter todo title"
+              placeholderTextColor="#999"
             />
+
             <View style={styles.editButtons}>
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton]}
                 onPress={handleCancelPress}
               >
-                <Text style={styles.buttonText}>Cancel</Text>
+                <Ionicons name="close-circle-outline" size={20} color="#666" />
+                <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
+                style={[
+                  styles.button,
+                  styles.saveButton,
+                  !editedTitle.trim() && styles.disabledButton,
+                ]}
                 onPress={handleSavePress}
+                disabled={!editedTitle.trim()}
               >
-                <Text style={styles.buttonText}>Save</Text>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={20}
+                  color="#FFF"
+                />
+                <Text style={styles.saveButtonText}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View>
             <View style={styles.header}>
-              <Text style={styles.title}>{todo.title}</Text>
+              <Text style={styles.title} numberOfLines={3}>
+                {todo.title}
+              </Text>
               <TouchableOpacity
                 style={styles.editButton}
                 onPress={handleEditPress}
               >
-                <Text style={styles.buttonText}>Edit</Text>
+                <Ionicons name="create-outline" size={20} color="#007AFF" />
+                <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.detailsContainer}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Status:</Text>
+                <Text style={styles.detailLabel}>Status</Text>
                 <View
                   style={[
                     styles.statusBadge,
@@ -121,6 +175,11 @@ export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
                       : styles.pendingBadge,
                   ]}
                 >
+                  <Ionicons
+                    name={todo.completed ? "checkmark-circle" : "time"}
+                    size={16}
+                    color="#FFF"
+                  />
                   <Text style={styles.statusText}>
                     {todo.completed ? "Completed" : "In Progress"}
                   </Text>
@@ -128,29 +187,50 @@ export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
               </View>
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Priority:</Text>
-                <Text style={styles.detailValue}>
-                  {todo.priority ? todo.priority.toUpperCase() : "Not set"}
-                </Text>
+                <Text style={styles.detailLabel}>Priority</Text>
+                <View
+                  style={[
+                    styles.priorityBadge,
+                    { backgroundColor: priorityColors[todo.priority] + "20" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.priorityText,
+                      { color: priorityColors[todo.priority] },
+                    ]}
+                  >
+                    {todo.priority
+                      ? todo.priority.charAt(0).toUpperCase() +
+                        todo.priority.slice(1).toLowerCase()
+                      : "Not set"}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Due Date:</Text>
-                <Text style={styles.detailValue}>
-                  {formatDate(todo.dueDate)}
-                </Text>
+                <Text style={styles.detailLabel}>Due Date</Text>
+                <View style={styles.dateContainer}>
+                  <Ionicons name="calendar-outline" size={16} color="#666" />
+                  <Text style={styles.detailValue}>
+                    {formatDate(todo.dueDate)}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Created:</Text>
-                <Text style={styles.detailValue}>
-                  {formatDate(todo.createdAt)}
-                </Text>
+                <Text style={styles.detailLabel}>Created</Text>
+                <View style={styles.dateContainer}>
+                  <Ionicons name="time-outline" size={16} color="#666" />
+                  <Text style={styles.detailValue}>
+                    {formatDate(todo.createdAt)}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>ID:</Text>
-                <Text style={styles.detailValue}>{todo.id}</Text>
+                <Text style={styles.detailLabel}>ID</Text>
+                <Text style={styles.idValue}>{todo.id}</Text>
               </View>
             </View>
           </View>
@@ -160,25 +240,55 @@ export default function TodoDetailScreen({ route }: TodoDetailScreenProps) {
   );
 }
 
-// const styles = StyleSheet.create({
-//   // ... styles remain unchanged
-// });
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F5F7FA",
+  },
+  contentContainer: {
     padding: 16,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#F5F7FA",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+    backgroundColor: "#F5F7FA",
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#2C3E50",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#64748B",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  backButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#FFF",
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
     elevation: 2,
     shadowColor: "#000",
@@ -189,78 +299,110 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
+    alignItems: "flex-start",
+    marginBottom: 20,
   },
   title: {
     fontSize: 20,
-    fontWeight: "600",
+    fontWeight: "700",
+    color: "#2C3E50",
     flex: 1,
-    marginRight: 12,
+    marginRight: 16,
+    lineHeight: 28,
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#F0F8FF",
+    gap: 4,
+  },
+  editButtonText: {
+    color: "#007AFF",
+    fontWeight: "600",
+    fontSize: 14,
   },
   detailsContainer: {
-    marginTop: 8,
+    gap: 16,
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    justifyContent: "space-between",
   },
   detailLabel: {
-    width: 80,
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#666",
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#64748B",
   },
   detailValue: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
+    fontSize: 15,
+    color: "#2C3E50",
+    marginLeft: 8,
+  },
+  idValue: {
+    fontSize: 14,
+    color: "#94A3B8",
+    fontFamily: "monospace",
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
   },
   completedBadge: {
     backgroundColor: "#4CAF50",
   },
   pendingBadge: {
-    backgroundColor: "#FFC107",
+    backgroundColor: "#FF9800",
   },
   statusText: {
-    color: "#fff",
-    fontWeight: "500",
+    color: "#FFF",
+    fontWeight: "600",
+    fontSize: 14,
   },
-  editButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  priorityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "500",
+  priorityText: {
+    fontWeight: "600",
+    fontSize: 14,
   },
   editContainer: {
-    padding: 16,
+    padding: 4,
   },
-  label: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
+  editHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  editTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#2C3E50",
   },
   editInput: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    minHeight: 100,
+    backgroundColor: "#F9FAFB",
+    color: "#2C3E50",
+    minHeight: 120,
     textAlignVertical: "top",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   editButtons: {
     flexDirection: "row",
@@ -268,16 +410,31 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   button: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minWidth: 100,
+    flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
   },
   cancelButton: {
-    backgroundColor: "#666",
+    backgroundColor: "#F3F4F6",
   },
   saveButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#007AFF",
+  },
+  disabledButton: {
+    backgroundColor: "#A0A0A0",
+    opacity: 0.5,
+  },
+  cancelButtonText: {
+    color: "#666",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  saveButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
+    fontSize: 14,
   },
 });
