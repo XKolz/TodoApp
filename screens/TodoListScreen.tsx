@@ -11,6 +11,9 @@ import {
   Modal,
   ListRenderItem,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Swipeable } from "react-native-gesture-handler";
@@ -19,7 +22,7 @@ import { todoApi } from "../api/todoApi";
 import { PriorityBadge, priorityColors } from "../components/PriorityBadge";
 import { TodoListScreenProps, Todo, TodoInput, Priority } from "../types/types";
 // For debugging, clear storage on every reload
-import { clearStorage } from "../utils/storage";
+// import { clearStorage } from "../utils/storage";
 
 const { width } = Dimensions.get("window");
 
@@ -46,22 +49,10 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
     queryFn: todoApi.fetchTodos,
   });
 
-  // const deleteTodoMutation = useMutation({
-  //   mutationFn: (todoId: string) => todoApi.deleteTodo(todoId),
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ["todos"] });
-  //   },
-  // });
   const deleteTodoMutation = useMutation({
     mutationFn: (todoId: string) => todoApi.deleteTodo(todoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todos"] });
-    },
-    onError: (error) => {
-      console.error("Failed to delete todo:", error);
-      Alert.alert("Error", "Failed to delete todo. Please try again.", [
-        { text: "OK" },
-      ]);
     },
   });
 
@@ -220,79 +211,84 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
       )}
 
       <Modal visible={showAddModal} animationType="slide" transparent={true}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Todo</Text>
-              <TouchableOpacity
-                onPress={() => setShowAddModal(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            <TextInput
-              style={styles.modalInput}
-              value={newTodo}
-              onChangeText={setNewTodo}
-              placeholder="What needs to be done?"
-              placeholderTextColor="#999"
-              autoFocus={true}
-              multiline={true}
-              numberOfLines={3}
-            />
-
-            <Text style={styles.label}>Priority Level</Text>
-            <View style={styles.priorityButtons}>
-              {Object.values(Priority).map((priority) => (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalContainer}
+        >
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create New Todo</Text>
                 <TouchableOpacity
-                  key={priority}
-                  style={[
-                    styles.priorityButton,
-                    selectedPriority === priority && styles.selectedPriority,
-                    { backgroundColor: priorityColors[priority] + "20" },
-                  ]}
-                  onPress={() => setSelectedPriority(priority)}
+                  onPress={() => setShowAddModal(false)}
+                  style={styles.closeButton}
                 >
-                  <Text
-                    style={[
-                      styles.priorityButtonText,
-                      { color: priorityColors[priority] },
-                    ]}
-                  >
-                    {priority.charAt(0).toUpperCase() +
-                      priority.slice(1).toLowerCase()}
-                  </Text>
+                  <Ionicons name="close" size={24} color="#666" />
                 </TouchableOpacity>
-              ))}
-            </View>
+              </View>
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowAddModal(false);
-                  setNewTodo("");
-                  setSelectedPriority(Priority.MEDIUM);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.addButton,
-                  !newTodo.trim() && styles.disabledButton,
-                ]}
-                onPress={handleAddTodo}
-                disabled={!newTodo.trim()}
-              >
-                <Text style={styles.addButtonText}>Create Todo</Text>
-              </TouchableOpacity>
+              <TextInput
+                style={styles.modalInput}
+                value={newTodo}
+                onChangeText={setNewTodo}
+                placeholder="What needs to be done?"
+                placeholderTextColor="#999"
+                autoFocus={true}
+                multiline={true}
+                numberOfLines={3}
+              />
+
+              <Text style={styles.label}>Priority Level</Text>
+              <View style={styles.priorityButtons}>
+                {Object.values(Priority).map((priority) => (
+                  <TouchableOpacity
+                    key={priority}
+                    style={[
+                      styles.priorityButton,
+                      selectedPriority === priority && styles.selectedPriority,
+                      { backgroundColor: priorityColors[priority] + "20" },
+                    ]}
+                    onPress={() => setSelectedPriority(priority)}
+                  >
+                    <Text
+                      style={[
+                        styles.priorityButtonText,
+                        { color: priorityColors[priority] },
+                      ]}
+                    >
+                      {priority.charAt(0).toUpperCase() +
+                        priority.slice(1).toLowerCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowAddModal(false);
+                    setNewTodo("");
+                    setSelectedPriority(Priority.MEDIUM);
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.modalButton,
+                    styles.addButton,
+                    !newTodo.trim() && styles.disabledButton,
+                  ]}
+                  onPress={handleAddTodo}
+                  disabled={!newTodo.trim()}
+                >
+                  <Text style={styles.addButtonText}>Create Todo</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -392,14 +388,26 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
+    // justifyContent: "center",
+    justifyContent: "flex-end",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     padding: 16,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 24,
+
+    // backgroundColor: "#fff",
+    // borderRadius: 16,
+    // padding: 24,
+    maxHeight: "90%", // Limit the modal height
+    marginHorizontal: 16,
+    marginBottom: Platform.OS === "ios" ? 34 : 24, // Account for bottom safe area
   },
   modalHeader: {
     flexDirection: "row",
