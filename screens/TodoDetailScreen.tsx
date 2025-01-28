@@ -7,6 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  SafeAreaView,
+  StatusBar,
+  Platform,
   Dimensions,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -92,151 +95,164 @@ export default function TodoDetailScreen({
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <View
-        style={[
-          styles.card,
-          !isEditing && {
-            borderLeftColor: priorityColors[todo.priority],
-            borderLeftWidth: 4,
-          },
-        ]}
+    <SafeAreaView style={styles.container}>
+      <TouchableOpacity
+        style={styles.backButtonContainer}
+        onPress={() => navigation.goBack()}
       >
-        {isEditing ? (
-          <View style={styles.editContainer}>
-            <View style={styles.editHeader}>
-              <Text style={styles.editTitle}>Edit Todo</Text>
-              <TouchableOpacity onPress={handleCancelPress}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
+        <Ionicons name="chevron-back" size={24} color="#007AFF" />
+        <Text style={styles.backButtonLabel}>Back</Text>
+      </TouchableOpacity>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+      >
+        <View
+          style={[
+            styles.card,
+            !isEditing && {
+              borderLeftColor: priorityColors[todo.priority],
+              borderLeftWidth: 4,
+            },
+          ]}
+        >
+          {isEditing ? (
+            <View style={styles.editContainer}>
+              <View style={styles.editHeader}>
+                <Text style={styles.editTitle}>Edit Todo</Text>
+                <TouchableOpacity onPress={handleCancelPress}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
 
-            <TextInput
-              style={styles.editInput}
-              value={editedTitle}
-              onChangeText={setEditedTitle}
-              multiline
-              placeholder="Enter todo title"
-              placeholderTextColor="#999"
-            />
+              <TextInput
+                style={styles.editInput}
+                value={editedTitle}
+                onChangeText={setEditedTitle}
+                multiline
+                placeholder="Enter todo title"
+                placeholderTextColor="#999"
+              />
 
-            <View style={styles.editButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={handleCancelPress}
-              >
-                <Ionicons name="close-circle-outline" size={20} color="#666" />
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.saveButton,
-                  !editedTitle.trim() && styles.disabledButton,
-                ]}
-                onPress={handleSavePress}
-                disabled={!editedTitle.trim()}
-              >
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={20}
-                  color="#FFF"
-                />
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View>
-            <View style={styles.header}>
-              <Text style={styles.title} numberOfLines={3}>
-                {todo.title}
-              </Text>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={handleEditPress}
-              >
-                <Ionicons name="create-outline" size={20} color="#007AFF" />
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.detailsContainer}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Status</Text>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    todo.completed
-                      ? styles.completedBadge
-                      : styles.pendingBadge,
-                  ]}
+              <View style={styles.editButtons}>
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={handleCancelPress}
                 >
                   <Ionicons
-                    name={todo.completed ? "checkmark-circle" : "time"}
-                    size={16}
+                    name="close-circle-outline"
+                    size={20}
+                    color="#666"
+                  />
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.button,
+                    styles.saveButton,
+                    !editedTitle.trim() && styles.disabledButton,
+                  ]}
+                  onPress={handleSavePress}
+                  disabled={!editedTitle.trim()}
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
                     color="#FFF"
                   />
-                  <Text style={styles.statusText}>
-                    {todo.completed ? "Completed" : "In Progress"}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Priority</Text>
-                <View
-                  style={[
-                    styles.priorityBadge,
-                    { backgroundColor: priorityColors[todo.priority] + "20" },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.priorityText,
-                      { color: priorityColors[todo.priority] },
-                    ]}
-                  >
-                    {todo.priority
-                      ? todo.priority.charAt(0).toUpperCase() +
-                        todo.priority.slice(1).toLowerCase()
-                      : "Not set"}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Due Date</Text>
-                <View style={styles.dateContainer}>
-                  <Ionicons name="calendar-outline" size={16} color="#666" />
-                  <Text style={styles.detailValue}>
-                    {formatDate(todo.dueDate)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Created</Text>
-                <View style={styles.dateContainer}>
-                  <Ionicons name="time-outline" size={16} color="#666" />
-                  <Text style={styles.detailValue}>
-                    {formatDate(todo.createdAt)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>ID</Text>
-                <Text style={styles.idValue}>{todo.id}</Text>
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+          ) : (
+            <View>
+              <View style={styles.header}>
+                <Text style={styles.title} numberOfLines={3}>
+                  {todo.title}
+                </Text>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleEditPress}
+                >
+                  <Ionicons name="create-outline" size={20} color="#007AFF" />
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Status</Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      todo.completed
+                        ? styles.completedBadge
+                        : styles.pendingBadge,
+                    ]}
+                  >
+                    <Ionicons
+                      name={todo.completed ? "checkmark-circle" : "time"}
+                      size={16}
+                      color="#FFF"
+                    />
+                    <Text style={styles.statusText}>
+                      {todo.completed ? "Completed" : "In Progress"}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Priority</Text>
+                  <View
+                    style={[
+                      styles.priorityBadge,
+                      { backgroundColor: priorityColors[todo.priority] + "20" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.priorityText,
+                        { color: priorityColors[todo.priority] },
+                      ]}
+                    >
+                      {todo.priority
+                        ? todo.priority.charAt(0).toUpperCase() +
+                          todo.priority.slice(1).toLowerCase()
+                        : "Not set"}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Due Date</Text>
+                  <View style={styles.dateContainer}>
+                    <Ionicons name="calendar-outline" size={16} color="#666" />
+                    <Text style={styles.detailValue}>
+                      {formatDate(todo.dueDate)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Created</Text>
+                  <View style={styles.dateContainer}>
+                    <Ionicons name="time-outline" size={16} color="#666" />
+                    <Text style={styles.detailValue}>
+                      {formatDate(todo.createdAt)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>ID</Text>
+                  <Text style={styles.idValue}>{todo.id}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -244,6 +260,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7FA",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  },
+  backButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    paddingBottom: 8,
+  },
+  backButtonLabel: {
+    fontSize: 16,
+    color: "#007AFF",
+    marginLeft: 4,
+    fontWeight: "500",
   },
   contentContainer: {
     padding: 16,

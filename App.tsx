@@ -20,12 +20,12 @@ export default function App() {
             <Stack.Screen
               name="TodoList"
               component={TodoListScreen}
-              options={{ title: "Todo List" }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="TodoDetail"
               component={TodoDetailScreen}
-              options={{ title: "Todo Details" }}
+              options={{ headerShown: false }}
             />
           </Stack.Navigator>
         </NavigationContainer>

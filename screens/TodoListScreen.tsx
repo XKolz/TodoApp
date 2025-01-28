@@ -13,6 +13,8 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
+  SafeAreaView,
   ScrollView,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -184,7 +186,7 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <TouchableOpacity
         style={styles.floatingAddButton}
         onPress={() => setShowAddModal(true)}
@@ -290,7 +292,7 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -298,6 +300,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F7FA",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   loadingContainer: {
     flex: 1,
