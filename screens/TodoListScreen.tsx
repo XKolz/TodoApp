@@ -247,15 +247,29 @@ export default function TodoListScreen({ navigation }: TodoListScreenProps) {
                     key={priority}
                     style={[
                       styles.priorityButton,
-                      selectedPriority === priority && styles.selectedPriority,
-                      { backgroundColor: priorityColors[priority] + "20" },
+                      {
+                        backgroundColor:
+                          selectedPriority === priority
+                            ? priorityColors[priority] // Solid color for selected
+                            : priorityColors[priority] + "20", // Transparent background for unselected
+                        borderColor:
+                          selectedPriority === priority
+                            ? priorityColors[priority]
+                            : "transparent",
+                        borderWidth: selectedPriority === priority ? 2 : 0,
+                      },
                     ]}
                     onPress={() => setSelectedPriority(priority)}
                   >
                     <Text
                       style={[
                         styles.priorityButtonText,
-                        { color: priorityColors[priority] },
+                        {
+                          color:
+                            selectedPriority === priority
+                              ? "#fff"
+                              : priorityColors[priority],
+                        },
                       ]}
                     >
                       {priority.charAt(0).toUpperCase() +
@@ -453,7 +467,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    minWidth: width * 0.25,
+    minWidth: width * 0.23,
     alignItems: "center",
   },
   selectedPriority: {

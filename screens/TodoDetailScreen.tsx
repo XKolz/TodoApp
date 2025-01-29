@@ -15,7 +15,11 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { todoApi } from "../api/todoApi";
-import { TodoDetailScreenProps, UpdateTodoPayload } from "../types/types";
+import {
+  TodoDetailScreenProps,
+  UpdateTodoPayload,
+  Priority,
+} from "../types/types";
 import { priorityColors } from "../components/PriorityBadge";
 
 const { width } = Dimensions.get("window");
@@ -27,6 +31,9 @@ export default function TodoDetailScreen({
   const { todoId } = route.params;
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState<Priority>(
+    Priority.MEDIUM
+  );
   const queryClient = useQueryClient();
 
   const { data: todo, isLoading } = useQuery({
@@ -72,6 +79,7 @@ export default function TodoDetailScreen({
 
   const handleEditPress = () => {
     setEditedTitle(todo.title);
+    setSelectedPriority(todo.priority);
     setIsEditing(true);
   };
 
@@ -80,6 +88,7 @@ export default function TodoDetailScreen({
       updateTodoMutation.mutate({
         id: todo.id,
         title: editedTitle,
+        priority: selectedPriority,
       });
     }
   };
@@ -133,6 +142,45 @@ export default function TodoDetailScreen({
                 placeholder="Enter todo title"
                 placeholderTextColor="#999"
               />
+
+              <Text style={styles.label}>Priority Level</Text>
+              <View style={styles.priorityButtons}>
+                {Object.values(Priority).map((priority) => (
+                  <TouchableOpacity
+                    key={priority}
+                    style={[
+                      styles.priorityButton,
+                      {
+                        backgroundColor:
+                          selectedPriority === priority
+                            ? priorityColors[priority]
+                            : priorityColors[priority] + "20",
+                        borderColor:
+                          selectedPriority === priority
+                            ? priorityColors[priority]
+                            : "transparent",
+                        borderWidth: selectedPriority === priority ? 2 : 0,
+                      },
+                    ]}
+                    onPress={() => setSelectedPriority(priority)}
+                  >
+                    <Text
+                      style={[
+                        styles.priorityButtonText,
+                        {
+                          color:
+                            selectedPriority === priority
+                              ? "#fff"
+                              : priorityColors[priority],
+                        },
+                      ]}
+                    >
+                      {priority.charAt(0).toUpperCase() +
+                        priority.slice(1).toLowerCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               <View style={styles.editButtons}>
                 <TouchableOpacity
@@ -465,5 +513,27 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "600",
     fontSize: 14,
+  },
+  priorityButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  priorityButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: width * 0.25,
+    alignItems: "center",
+  },
+  priorityButtonText: {
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2C3E50",
+    marginBottom: 12,
   },
 });
